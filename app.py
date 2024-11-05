@@ -1,8 +1,20 @@
-import requests
 import streamlit as st
+import json
+from predictionguard import PredictionGuard  # Assuming Prediction Guard has a Python SDK
 
-# API key for Prediction Guard (make sure to store it securely in Streamlit secrets or environment variables)
-PREDICTION_GUARD_API_KEY = "BcJzXHGjO3XNrpwHOTSYveOe2glUdrbrECukDtF1"
+# Configuration (could also be moved to a config file or environment variables)
+cfg = {
+    "predictionguard": {
+        "url": " https://globalpath.predictionguard.com",
+        "api_key": "BcJzXHGjO3XNrpwHOTSYveOe2glUdrbrECukDtF1"  # Replace with your actual API key
+    }
+}
+
+# Initialize the Prediction Guard client
+client = PredictionGuard(
+    url=cfg["predictionguard"]["url"],
+    api_key=cfg["predictionguard"]["api_key"]
+)
 
 # Define model and context/system message for the assistant
 MODEL = "Hermes-3-Llama-3.1-70B"
@@ -12,9 +24,8 @@ and AI/ML technologies. Provide clear, helpful answers for users seeking guidanc
 these areas, and suggest resources when appropriate.
 """
 
-with st.sidebar:
-    st.title('🤖💬 Prediction Guard Chatbot')
-    st.success('API key securely set up!', icon='✅')
+# Streamlit app setup
+st.title("🤖 Prediction Guard Chatbot")
 
 # Initialize session state to store conversation messages
 if "messages" not in st.session_state:
@@ -28,57 +39,41 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # Collect user input and handle chat completion
-if prompt := st.chat_input("What is up?"):
+if prompt := st.chat_input("Ask me anything!"):
     # Add user message to session state
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
-        
+    
     # Prepare data for Prediction Guard API
     data = {
         "model": MODEL,
         "messages": st.session_state.messages,
         "max_tokens": 1000,
-        "temperature": 1,
-        "top_p": 1,
-        "top_k": 50,
-        "stream": True,
-        "input": {
-            "pii": "replace",
-            "pii_replace_method": "random"
-        }
+        "temperature": 0.5,
+        "stream": True
     }
     
-    # Send request to Prediction Guard API
-    headers = {
-        "Authorization": f"Bearer {PREDICTION_GUARD_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
+    # Placeholder to display streaming response from the assistant
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         full_response = ""
-        
+
         try:
-            response = requests.post(
-                "https://globalpath.predictionguard.com",
-                headers=headers,
-                json=data,
-                stream=True
-            )
+            # Send streaming request to Prediction Guard API
+            response = client.chat.completions.create(**data)
+
+            # Stream response
+            for delta in response['choices']:
+                delta_content = delta.get("content", "")
+                full_response += delta_content
+                message_placeholder.markdown(full_response + "▌")  # Display with typing indicator
             
-            # Stream response from API
-            for line in response.iter_lines():
-                if line:
-                    content = line.decode("utf-8")
-                    # Extract content if structured data received
-                    if "choices" in content:
-                        full_response += content["choices"][0]["delta"].get("content", "")
-                        message_placeholder.markdown(full_response + "▌")
+            # Finalize response display
             message_placeholder.markdown(full_response)
-            
+        
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error(f"An error occurred: {str(e)}")
         
     # Add assistant response to session state
     st.session_state.messages.append({"role": "assistant", "content": full_response})
