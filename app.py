@@ -66,11 +66,18 @@ if prompt := st.chat_input("Ask me anything!"):
             # Stream response by iterating over each line of streamed data
             for line in response.iter_lines():
                 if line:
-                    # Parse JSON response and retrieve content
-                    content_data = json.loads(line.decode("utf-8"))
-                    delta_content = content_data["data"]["choices"][0]["delta"].get("content", "")
-                    full_response += delta_content
-                    message_placeholder.markdown(full_response + "▌")  # Display with typing indicator
+                    # Parse JSON response and check for "data" field
+                    try:
+                        content_data = json.loads(line.decode("utf-8"))
+                        # Verify that content_data has the expected structure
+                        if "data" in content_data:
+                            choices = content_data["data"].get("choices", [])
+                            if choices and "delta" in choices[0]:
+                                delta_content = choices[0]["delta"].get("content", "")
+                                full_response += delta_content
+                                message_placeholder.markdown(full_response + "▌")  # Display with typing indicator
+                    except json.JSONDecodeError:
+                        st.warning("Received an unrecognized response format.")
             
             # Finalize response display
             message_placeholder.markdown(full_response)
