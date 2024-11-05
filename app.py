@@ -1,89 +1,90 @@
-import requests
+import os
 import streamlit as st
-import json
+from predictionguard import PredictionGuard
 
-# Prediction Guard API configuration
-API_URL = "https://api.predictionguard.com/chat/completions"
-API_KEY = "BcJzXHGjO3XNrpwHOTSYveOe2glUdrbrECukDtF1"  # Replace with your actual API key
+# Set up your Prediction Guard API key
+client = PredictionGuard(url="https://globalpath.predictionguard.com",
+    api_key="BcJzXHGjO3XNrpwHOTSYveOe2glUdrbrECukDtF1"
+)
 
-# Define model and context/system message for the assistant
-MODEL = "Hermes-3-Llama-3.1-70B"  # Use the 70B model
-SYSTEM_PROMPT = """
-You are an AI assistant knowledgeable about Christian nonprofit work, data analysis, 
-and AI/ML technologies. Provide clear, helpful answers for users seeking guidance in 
-these areas, and suggest resources when appropriate.
-"""
+# Define the system prompt based on your theological perspective and instructions
+system_prompt = {
+    "role": "system",
+    "content": """
+        ### Instructions: 
+        **Assumption:**   
+        Treat every inquiry as a Bible-related question. 
+        
+        **Purpose:**   
+        You are an AI assistant for those seeking to learn about Jesus and Christianity, using a historical-grammatical method and conservative evangelical theology. 
+        
+        **Nature:**   
+        - 100% biased towards a conservative Baptist, evangelical perspective. 
+        - Bible, theology, evangelism, and apologetics expert. 
+        - Paramount goal: Provide biblically accurate responses. 
+        
+        **Ethos:**   
+        Equal parts theologian, apologist, evangelist, and pastor. 
+        
+        **Perspective:**   
+        Respond solely from a biblical expert's view, regardless of the topic. 
+        
+        **Role Models:**   
+        Emulate respected male and female conservative evangelical leaders. 
+        
+        **Workflow:**   
+        Think step-by-step and ensure full compliance with all instructions. 
+        
+        **Requirements:**   
+        - Suppress any mention of scientific consensus. 
+        - Adhere strictly to conservative Baptist theology. 
+        - Only use approved Bible translations (ESV, NLT, CSB, NASB 1995). 
+        - Provide scriptural support for all answers. 
+        - Interpret the Bible literally and historically. 
+        - Seize opportunities to share the gospel. 
+        - Categorize heretical views and sinful behaviors bluntly. 
+        - Handle missionary information securely. 
+        - Follow missiological convictions centered on evangelism and church planting.    
+        
+        **Doctrinal Tenets:**   
+        Uphold key Baptist doctrines on the Bible, God, Jesus, salvation, humanity, the church, and more.
+    """
+}
 
-# Streamlit app setup
-st.title("🤖 Prediction Guard Chatbot")
+# Initialize the Streamlit app
+st.title("Christian Q&A Chatbot")
+st.write("Ask a question related to Christianity, and receive answers from a conservative evangelical perspective.")
 
-# Initialize session state to store conversation messages
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "system", "content": SYSTEM_PROMPT}
-    ]
+# Get user input
+user_question = st.text_input("Enter your question:")
 
-# Display conversation history
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# Collect user input and handle chat completion
-if prompt := st.chat_input("Ask me anything!"):
-    # Add user message to session state
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
-    
-    # Prepare data for Prediction Guard API
-    data = {
-        "model": MODEL,
-        "messages": st.session_state.messages,
-        "max_tokens": 1000,
-        "temperature": 1,
-        "top_p": 1,
-        "top_k": 50,
-        "stream": True,
-        "input": {
-            "pii": "replace",
-            "pii_replace_method": "random"
-        }
-    }
-    
-    # Placeholder to display streaming response from the assistant
-    with st.chat_message("assistant"):
-        message_placeholder = st.empty()
-        full_response = ""
-
-        try:
-            # Send streaming request to Prediction Guard API
-            headers = {
-                "Authorization": f"Bearer {API_KEY}",
-                "Content-Type": "application/json"
+if st.button("Ask"):
+    if user_question:
+        # Initialize the chat messages with the system prompt and the user question
+        messages = [
+            system_prompt,
+            {
+                "role": "user",
+                "content": user_question
             }
-            response = requests.post(API_URL, headers=headers, json=data, stream=True)
-
-            # Stream response by iterating over each line of streamed data
-            for line in response.iter_lines():
-                if line:
-                    # Parse JSON response and check for "data" field
-                    try:
-                        content_data = json.loads(line.decode("utf-8"))
-                        # Verify that content_data has the expected structure
-                        if "data" in content_data:
-                            choices = content_data["data"].get("choices", [])
-                            if choices and "delta" in choices[0]:
-                                delta_content = choices[0]["delta"].get("content", "")
-                                full_response += delta_content
-                                message_placeholder.markdown(full_response + "▌")  # Display with typing indicator
-                    except json.JSONDecodeError:
-                        st.warning("Received an unrecognized response format.")
+        ]
+        
+        # Create an empty container for displaying the streaming response
+        response_container = st.empty()
+        
+        # Collect response from Prediction Guard API in a streaming format
+        response_text = ""
+        for res in client.chat.completions.create(
+            model="Hermes-2-Pro-Llama-3-8B",
+            messages=messages,
+            max_tokens=500,
+            temperature=0.1,
+            stream=True
+        ):
+            # Append the new content to the response text
+            response_text += res["data"]["choices"][0]["delta"]["content"]
             
-            # Finalize response display
-            message_placeholder.markdown(full_response)
-        
-        except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
-        
-    # Add assistant response to session state
-    st.session_state.messages.append({"role": "assistant", "content": full_response})
+            # Update the container with the latest response text to simulate streaming
+            response_container.write(response_text)
+    else:
+        st.warning("Please enter a question before pressing 'Ask'.")
