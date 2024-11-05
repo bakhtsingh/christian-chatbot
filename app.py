@@ -79,7 +79,7 @@ if user_input := st.chat_input("Enter your question here..."):
 
         # Stream assistant response from Prediction Guard
         for res in client.chat.completions.create(
-            model="Hermes-2-Pro-Llama-3-8B",
+            model="Hermes-3-Llama-3.1-70B",
             messages=st.session_state.messages,
             max_tokens=500,
             temperature=0.1,
