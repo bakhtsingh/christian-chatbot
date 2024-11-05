@@ -51,40 +51,44 @@ system_prompt = {
     """
 }
 
-# Initialize the Streamlit app
-st.title("Christian Q&A Chatbot")
-st.write("Ask a question related to Christianity, and receive answers from a conservative evangelical perspective.")
+# Sidebar with Chatbot info
+with st.sidebar:
+    st.title("📖🙏 Christian Q&A Chatbot")
+    st.write("Ask questions about Christianity, theology, and the Bible.")
 
-# Get user input
-user_question = st.text_input("Enter your question:")
+# Initialize the conversation session state
+if "messages" not in st.session_state:
+    st.session_state.messages = [system_prompt]
 
-if st.button("Ask"):
-    if user_question:
-        # Initialize the chat messages with the system prompt and the user question
-        messages = [
-            system_prompt,
-            {
-                "role": "user",
-                "content": user_question
-            }
-        ]
-        
-        # Create an empty container for displaying the streaming response
-        response_container = st.empty()
-        
-        # Collect response from Prediction Guard API in a streaming format
-        response_text = ""
+# Display all previous messages in the chat history
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# Input prompt at the bottom for the user to ask a question
+if user_input := st.chat_input("Enter your question here..."):
+    # Add user message to session state
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.markdown(user_input)
+
+    # Prepare assistant's response container
+    with st.chat_message("assistant"):
+        message_placeholder = st.empty()
+        full_response = ""
+
+        # Stream assistant response from Prediction Guard
         for res in client.chat.completions.create(
-            model="Hermes-3-Llama-3.1-70B",
-            messages=messages,
+            model="Hermes-2-Pro-Llama-3-8B",
+            messages=st.session_state.messages,
             max_tokens=500,
             temperature=0.1,
             stream=True
         ):
-            # Append the new content to the response text
-            response_text += res["data"]["choices"][0]["delta"]["content"]
-            
-            # Update the container with the latest response text to simulate streaming
-            response_container.write(response_text)
-    else:
-        st.warning("Please enter a question before pressing 'Ask'.")
+            # Append each piece of content to full_response and update display
+            full_response += res["data"]["choices"][0]["delta"].get("content", "")
+            message_placeholder.markdown(full_response + "▌")
+
+        # Finalize the assistant response without cursor
+        message_placeholder.markdown(full_response)
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
