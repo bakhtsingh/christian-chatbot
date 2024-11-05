@@ -2,7 +2,7 @@ import requests
 import streamlit as st
 
 # API key for Prediction Guard (make sure to store it securely in Streamlit secrets or environment variables)
-PREDICTION_GUARD_API_KEY = st.secrets["PREDICTION_GUARD_API_KEY"]
+PREDICTION_GUARD_API_KEY = "BcJzXHGjO3XNrpwHOTSYveOe2glUdrbrECukDtF1"
 
 # Define model and context/system message for the assistant
 MODEL = "Hermes-3-Llama-3.1-70B"
