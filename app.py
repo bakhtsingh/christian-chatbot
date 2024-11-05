@@ -61,7 +61,7 @@ if prompt := st.chat_input("What is up?"):
         
         try:
             response = requests.post(
-                "https://api.predictionguard.com/chat/completions",
+                "https://globalpath.predictionguard.com",
                 headers=headers,
                 json=data,
                 stream=True
