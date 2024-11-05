@@ -75,7 +75,7 @@ if st.button("Ask"):
         # Collect response from Prediction Guard API in a streaming format
         response_text = ""
         for res in client.chat.completions.create(
-            model="Hermes-2-Pro-Llama-3-8B",
+            model="Hermes-3-Llama-3.1-70B",
             messages=messages,
             max_tokens=500,
             temperature=0.1,
