@@ -2,12 +2,13 @@ import os
 import streamlit as st
 from predictionguard import PredictionGuard
 
-# Set up your Prediction Guard API key
-client = PredictionGuard(url="https://globalpath.predictionguard.com",
+# Set up your Prediction Guard API client
+client = PredictionGuard(
+    url="https://globalpath.predictionguard.com",
     api_key="BcJzXHGjO3XNrpwHOTSYveOe2glUdrbrECukDtF1"
 )
 
-# Define the system prompt based on your theological perspective and instructions
+# Define the system prompt for theological perspective (won't appear in the UI)
 system_prompt = {
     "role": "system",
     "content": """
@@ -60,10 +61,11 @@ with st.sidebar:
 if "messages" not in st.session_state:
     st.session_state.messages = [system_prompt]
 
-# Display all previous messages in the chat history
+# Display all previous messages in the chat history, excluding the system prompt
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+    if message["role"] != "system":  # Skip displaying the system prompt
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
 # Input prompt at the bottom for the user to ask a question
 if user_input := st.chat_input("Enter your question here..."):
