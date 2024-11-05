@@ -1,23 +1,13 @@
+import requests
 import streamlit as st
 import json
-from predictionguard import PredictionGuard  # Assuming Prediction Guard has a Python SDK
 
-# Configuration (could also be moved to a config file or environment variables)
-cfg = {
-    "predictionguard": {
-        "url": " https://globalpath.predictionguard.com",
-        "api_key": "BcJzXHGjO3XNrpwHOTSYveOe2glUdrbrECukDtF1"  # Replace with your actual API key
-    }
-}
-
-# Initialize the Prediction Guard client
-client = PredictionGuard(
-    url=cfg["predictionguard"]["url"],
-    api_key=cfg["predictionguard"]["api_key"]
-)
+# Prediction Guard API configuration
+API_URL = "https://api.predictionguard.com/chat/completions"
+API_KEY = "BcJzXHGjO3XNrpwHOTSYveOe2glUdrbrECukDtF1"  # Replace with your actual API key
 
 # Define model and context/system message for the assistant
-MODEL = "Hermes-3-Llama-3.1-70B"
+MODEL = "Hermes-3-Llama-3.1-70B"  # Use the 70B model
 SYSTEM_PROMPT = """
 You are an AI assistant knowledgeable about Christian nonprofit work, data analysis, 
 and AI/ML technologies. Provide clear, helpful answers for users seeking guidance in 
@@ -50,8 +40,14 @@ if prompt := st.chat_input("Ask me anything!"):
         "model": MODEL,
         "messages": st.session_state.messages,
         "max_tokens": 1000,
-        "temperature": 0.5,
-        "stream": True
+        "temperature": 1,
+        "top_p": 1,
+        "top_k": 50,
+        "stream": True,
+        "input": {
+            "pii": "replace",
+            "pii_replace_method": "random"
+        }
     }
     
     # Placeholder to display streaming response from the assistant
@@ -61,13 +57,20 @@ if prompt := st.chat_input("Ask me anything!"):
 
         try:
             # Send streaming request to Prediction Guard API
-            response = client.chat.completions.create(**data)
+            headers = {
+                "Authorization": f"Bearer {API_KEY}",
+                "Content-Type": "application/json"
+            }
+            response = requests.post(API_URL, headers=headers, json=data, stream=True)
 
-            # Stream response
-            for delta in response['choices']:
-                delta_content = delta.get("content", "")
-                full_response += delta_content
-                message_placeholder.markdown(full_response + "▌")  # Display with typing indicator
+            # Stream response by iterating over each line of streamed data
+            for line in response.iter_lines():
+                if line:
+                    # Parse JSON response and retrieve content
+                    content_data = json.loads(line.decode("utf-8"))
+                    delta_content = content_data["data"]["choices"][0]["delta"].get("content", "")
+                    full_response += delta_content
+                    message_placeholder.markdown(full_response + "▌")  # Display with typing indicator
             
             # Finalize response display
             message_placeholder.markdown(full_response)
