@@ -49,7 +49,7 @@ if user_input := st.chat_input("Enter your question here..."):
         for res in client.chat.completions.create(
             model="Hermes-3-Llama-3.1-70B",
             messages=st.session_state.messages,
-            max_tokens=500,
+            max_tokens=13500,
             temperature=0.1,
             stream=True
         ):
