@@ -59,6 +59,7 @@ if user_input := st.chat_input("Enter your question here..."):
             temperature=0.1
         )
     answer = result['choices'][0]['message']['content'].strip().lower()
+    print(f"Was user prompt is related to christianity?\n{answer}")
     if "yes" in answer:
         is_christian_related = True
 
