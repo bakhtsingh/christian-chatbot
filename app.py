@@ -3,8 +3,7 @@ import streamlit as st
 from predictionguard import PredictionGuard
 
 # Set up your Prediction Guard API client
-client = PredictionGuard(
-    url="https://globalpath.predictionguard.com",
+client = PredictionGuard(url="https://globalpath.predictionguard.com",
     api_key="BcJzXHGjO3XNrpwHOTSYveOe2glUdrbrECukDtF1"
 )
 
