@@ -40,22 +40,27 @@ if user_input := st.chat_input("Enter your question here..."):
         st.markdown(user_input)
 
     # First Phase: Check if the question is Christian-related
-    classification_prompt = [
-        system_prompt,
-        {"role": "user", "content": f"Is the following question about Christianity? Answer only 'Yes' or 'No'. Question: '{user_input}'"}
-    ]
-
     is_christian_related = False
-    for res in client.chat.completions.create(
-        model="Hermes-3-Llama-3.1-70B",
-        messages=classification_prompt,
-        max_tokens=1000,
-        temperature=0.1,
-        stream=False
-    ):
-        answer = res["data"]["choices"][0]["message"]["content"].strip().lower()
-        if "yes" in answer:
-            is_christian_related = True
+    result = client.chat.completions.create(
+            model="Hermes-3-Llama-3.1-70B",
+            messages=[
+                {"role": "system", "content": """
+                        Classification Instructions:
+                        You are an AI assistant tasked with determining if a question is related to Christianity. For each question, respond only with “Yes” or “No” based on the following:
+
+                        - Answer “Yes” if the question is about Christianity, the Bible, theology, Jesus, faith, or related topics.
+                        - Answer “No” if the question is unrelated to Christianity.
+
+                        Do not provide any additional information or explanations.
+                 """},
+                {"role": "user", "content": f"{user_input}"}
+            ],
+            max_tokens=100,
+            temperature=0.1
+        )
+    answer = result['choices'][0]['message']['content'].strip().lower()
+    if "yes" in answer:
+        is_christian_related = True
 
     # Second Phase: Generate response based on classification result
     if is_christian_related:
