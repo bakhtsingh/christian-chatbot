@@ -40,23 +40,49 @@ if user_input := st.chat_input("Enter your question here..."):
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Prepare assistant's response container
-    with st.chat_message("assistant"):
-        message_placeholder = st.empty()
-        full_response = ""
+    # First Phase: Check if the question is Christian-related
+    classification_prompt = [
+        system_prompt,
+        {"role": "user", "content": f"Is the following question about Christianity? Answer only 'Yes' or 'No'. Question: '{user_input}'"}
+    ]
 
-        # Stream assistant response from Prediction Guard
-        for res in client.chat.completions.create(
-            model="Hermes-3-Llama-3.1-70B",
-            messages=st.session_state.messages,
-            max_tokens=9999,
-            temperature=0.1,
-            stream=True
-        ):
-            # Append each piece of content to full_response and update display
-            full_response += res["data"]["choices"][0]["delta"].get("content", "")
-            message_placeholder.markdown(full_response + "▌")
+    is_christian_related = False
+    for res in client.chat.completions.create(
+        model="Hermes-3-Llama-3.1-70B",
+        messages=classification_prompt,
+        max_tokens=10,
+        temperature=0.1,
+        stream=False
+    ):
+        answer = res["data"]["choices"][0]["message"]["content"].strip().lower()
+        if "yes" in answer:
+            is_christian_related = True
 
-        # Finalize the assistant response without cursor
-        message_placeholder.markdown(full_response)
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
+    # Second Phase: Generate response based on classification result
+    if is_christian_related:
+        # Prepare assistant's response container
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            full_response = ""
+
+            # Stream assistant response from Prediction Guard
+            for res in client.chat.completions.create(
+                model="Hermes-3-Llama-3.1-70B",
+                messages=st.session_state.messages,
+                max_tokens=500,
+                temperature=0.1,
+                stream=True
+            ):
+                # Append each piece of content to full_response and update display
+                full_response += res["data"]["choices"][0]["delta"].get("content", "")
+                message_placeholder.markdown(full_response + "▌")
+
+            # Finalize the assistant response without cursor
+            message_placeholder.markdown(full_response)
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
+    else:
+        # If the question is not Christian-related, respond politely
+        polite_message = "I'm here to answer questions about Christianity, theology, and the Bible. Please feel free to ask something on these topics!"
+        st.session_state.messages.append({"role": "assistant", "content": polite_message})
+        with st.chat_message("assistant"):
+            st.markdown(polite_message)
