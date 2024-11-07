@@ -41,7 +41,8 @@ if user_input := st.chat_input("Enter your question here..."):
 
     # First Phase: Check if the question is Christian-related
     is_christian_related = False
-    result = client.chat.completions.create(
+    try:
+        result = client.chat.completions.create(
             model="Hermes-3-Llama-3.1-70B",
             messages=[
                 {"role": "system", "content": """
@@ -53,15 +54,17 @@ if user_input := st.chat_input("Enter your question here..."):
 
                         Do not provide any additional information or explanations.
                  """},
-                {"role": "user", "content": f"{user_input}"}
+                {"role": "user", "content": user_input}
             ],
-            max_tokens=100,
+            max_tokens=10,
             temperature=0.1
         )
-    answer = result['choices'][0]['message']['content'].strip().lower()
-    print(f"Was user prompt is related to christianity?\n{answer}")
-    if "yes" in answer:
-        is_christian_related = True
+        answer = result['choices'][0]['message']['content'].strip().lower()
+        print(f"Classification response: {answer}")
+        if "yes" in answer:
+            is_christian_related = True
+    except Exception as e:
+        st.error(f"Error in classification phase: {e}")
 
     # Second Phase: Generate response based on classification result
     if is_christian_related:
@@ -70,24 +73,32 @@ if user_input := st.chat_input("Enter your question here..."):
             message_placeholder = st.empty()
             full_response = ""
 
-            # Stream assistant response from Prediction Guard
-            for res in client.chat.completions.create(
-                model="Hermes-3-Llama-3.1-70B",
-                messages=st.session_state.messages,
-                max_tokens=500,
-                temperature=0.1,
-                stream=True
-            ):
-                # Append each piece of content to full_response and update display
-                full_response += res["data"]["choices"][0]["delta"].get("content", "")
-                message_placeholder.markdown(full_response + "▌")
+            # Attempt to stream the assistant response
+            try:
+                for res in client.chat.completions.create(
+                    model="Hermes-3-Llama-3.1-70B",
+                    messages=st.session_state.messages,
+                    max_tokens=500,
+                    temperature=0.1,
+                    stream=True
+                ):
+                    # Check if response contains 'data' and 'choices' keys, as expected
+                    if "data" in res and "choices" in res["data"]:
+                        content_piece = res["data"]["choices"][0]["delta"].get("content", "")
+                        full_response += content_piece
+                        message_placeholder.markdown(full_response + "▌")
+                    else:
+                        print("Unexpected response structure:", res)
 
-            # Finalize the assistant response without cursor
-            message_placeholder.markdown(full_response)
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
+                # Finalize the assistant response without cursor
+                message_placeholder.markdown(full_response)
+                st.session_state.messages.append({"role": "assistant", "content": full_response})
+            except Exception as e:
+                st.error(f"Error in response generation phase: {e}")
     else:
         # If the question is not Christian-related, respond politely
         polite_message = "I'm here to answer questions about Christianity, theology, and the Bible. Please feel free to ask something on these topics!"
         st.session_state.messages.append({"role": "assistant", "content": polite_message})
         with st.chat_message("assistant"):
             st.markdown(polite_message)
+
