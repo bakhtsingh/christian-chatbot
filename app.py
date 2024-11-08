@@ -82,13 +82,10 @@ if user_input := st.chat_input("Enter your question here..."):
                     temperature=0.1,
                     stream=True
                 ):
-                    # Check if response contains 'data' and 'choices' keys, as expected
-                    if "data" in res and "choices" in res["data"]:
-                        content_piece = res["data"]["choices"][0]["delta"].get("content", "")
-                        full_response += content_piece
-                        message_placeholder.markdown(full_response + "▌")
-                    else:
-                        print("Unexpected response structure:", res)
+                    
+                    # Append each piece of content to full_response and update display
+                    full_response += res["data"]["choices"][0]["delta"].get("content","")
+                    message_placeholder.markdown(full_response + "▌")
 
                 # Finalize the assistant response without cursor
                 message_placeholder.markdown(full_response)
@@ -101,4 +98,3 @@ if user_input := st.chat_input("Enter your question here..."):
         st.session_state.messages.append({"role": "assistant", "content": polite_message})
         with st.chat_message("assistant"):
             st.markdown(polite_message)
-
