@@ -41,33 +41,27 @@ if user_input := st.chat_input("Enter your question here..."):
 
     # First Phase: Check if the question is Christian-related
     is_christian_related = False
-    try:
-        result = client.chat.completions.create(
-            model="Hermes-3-Llama-3.1-70B",
-            messages=[
-                {"role": "system", "content": """
-                        Classification Instructions:
-                        You are an AI assistant tasked with determining if a question is related to Christianity. For each question, respond only with “Yes” or “No” based on the following:
+    result = client.chat.completions.create(
+        model="Hermes-3-Llama-3.1-70B",
+        messages=[
+            {"role": "system", "content": """
+                    Classification Instructions:
+                    You are an AI assistant tasked with determining if a question is related to Christianity. For each question, respond only with “Yes” or “No” based on the following:
 
-                        - Answer “Yes” if the question is about Christianity, the Bible, theology, Jesus, faith, or related topics.
-                        - Answer “No” if the question is unrelated to Christianity.
+                    - Answer “Yes” if the question is about Christianity, the Bible, theology, Jesus, faith, or related topics.
+                    - Answer “No” if the question is unrelated to Christianity.
 
-                        Do not provide any additional information or explanations.
-                 """},
-                {"role": "user", "content": user_input}
-            ],
-            max_tokens=10,
-            temperature=0.1
-        )
-        answer = result['choices'][0]['message']['content'].strip().lower()
-        print(f"Classification response: {answer}")
-        if "yes" in answer:
-            is_christian_related = True
-    except Exception as e:
-        st.error(f"Error in classification phase: {e}")
-
-    # Second Phase: Generate response based on classification result
-    if is_christian_related:
+                    Do not provide any additional information or explanations.
+                """},
+            {"role": "user", "content": user_input}
+        ],
+        max_tokens=10,
+        temperature=0.1
+    )
+    answer = result['choices'][0]['message']['content'].strip().lower()
+    print(f"Classification response: {answer}")
+    if "yes" in answer:
+        is_christian_related = True
         # Prepare assistant's response container
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
