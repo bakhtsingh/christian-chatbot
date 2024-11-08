@@ -59,7 +59,7 @@ if user_input := st.chat_input("Enter your question here..."):
         temperature=0.1
     )
     answer = result['choices'][0]['message']['content'].strip().lower()
-    os.write(f"Classification response: {answer}")
+    os.write(1,f"Classification response: {answer}")
     if "yes" in answer:
         is_christian_related = True
         # Prepare assistant's response container
