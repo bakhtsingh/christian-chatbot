@@ -62,6 +62,7 @@ if user_input := st.chat_input("Enter your question here..."):
     os.write(1, f"Classification response: {answer}".encode('utf-8'))
     if "yes" in answer:
         is_christian_related = True
+        st.session_state.messages.append({"role": "user", "content": user_input})
         # Prepare assistant's response container
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
